@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from keep_alive import keep_alive
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -16,8 +15,6 @@ if not token:
         "DISCORD_TOKEN not found. Make sure you have a .env file in the same "
         "directory as bot.py with the line:\n  DISCORD_TOKEN=your_token_here"
     )
-
-keep_alive()
 
 TRACKED_PATH = Path(__file__).parent / "tracked_messages.json"
 ROLES_PATH   = Path(__file__).parent / "allowed_roles.json"
@@ -163,7 +160,7 @@ async def on_reaction_add(reaction, user):
             if target_role_id:
                 member = reaction.message.guild.get_member(user.id)
                 if not member or not any(str(r.id) == target_role_id for r in member.roles):
-                    break
+                    continue
             if str(user.id) not in t["responded_user_ids"]:
                 t["responded_user_ids"].append(str(user.id))
                 changed = True
@@ -185,7 +182,7 @@ async def on_message(message):
                 target_role_id = t.get("target_role_id")
                 if target_role_id:
                     if not any(str(r.id) == target_role_id for r in message.author.roles):
-                        break
+                        continue
                 if str(message.author.id) not in t["responded_user_ids"]:
                     t["responded_user_ids"].append(str(message.author.id))
                     changed = True
