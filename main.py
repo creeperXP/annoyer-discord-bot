@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from keep_alive import keep_alive
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -15,6 +16,8 @@ if not token:
         "DISCORD_TOKEN not found. Make sure you have a .env file in the same "
         "directory as bot.py with the line:\n  DISCORD_TOKEN=your_token_here"
     )
+
+keep_alive()
 
 TRACKED_PATH = Path(__file__).parent / "tracked_messages.json"
 ROLES_PATH   = Path(__file__).parent / "allowed_roles.json"
