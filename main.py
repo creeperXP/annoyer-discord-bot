@@ -172,7 +172,52 @@ async def on_reaction_add(reaction, user):
         save_tracked(tracked)
 
 @bot.event
-async def on_message(message):
+async def on_reaction_remove(reaction, user):
+    if user.bot:
+        return
+    tracked = load_tracked()
+    changed = False
+    for t in tracked:
+        if t["message_id"] == str(reaction.message.id) and t["trigger_type"] == "reaction":
+            if str(user.id) in t["responded_user_ids"]:
+                t["responded_user_ids"].remove(str(user.id))
+                changed = True
+            break
+    if changed:
+        save_tracked(tracked)
+
+@bot.event
+async def on_message_delete(message):
+    if message.author.bot:
+        return
+    # If a reply to a tracked message is deleted, unmark that user as responded
+    if message.reference and message.reference.message_id:
+        tracked = load_tracked()
+        changed = False
+        for t in tracked:
+            if t["message_id"] == str(message.reference.message_id) and t["trigger_type"] == "reply":
+                # Only unmark if they have no OTHER replies to this message still up
+                # We can't check remaining messages from an event, so we re-scan channel history
+                still_replied = False
+                try:
+                    async for msg in message.channel.history(limit=500):
+                        if (
+                            msg.reference is not None
+                            and msg.reference.message_id == message.reference.message_id
+                            and msg.author.id == message.author.id
+                            and msg.id != message.id
+                            and not msg.author.bot
+                        ):
+                            still_replied = True
+                            break
+                except (discord.HTTPException, AttributeError):
+                    pass
+                if not still_replied and str(message.author.id) in t["responded_user_ids"]:
+                    t["responded_user_ids"].remove(str(message.author.id))
+                    changed = True
+                break
+        if changed:
+            save_tracked(tracked)
     if message.author.bot:
         await bot.process_commands(message)
         return
